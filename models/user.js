@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 const passportLocalMongoose = require("passport-local-mongoose");
 
 const userSchema = new mongoose.Schema ({
-    name: { type: String, },
-    usertype: {tpye: String},
+    fullname: { type: String },
+    usertype: {type: String },
     username: {type: String },
     courses: {type:[String], default: []},
 

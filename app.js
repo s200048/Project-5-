@@ -67,21 +67,44 @@ app.get("/register", (req, res) => {
   res.render("register");
 });
 
-app.post("/register", (req,res) => {
+app.post("/register", async (req,res,next) => {
   let {fullname, usertype, username, password, password2} = req.body;
-  function abc() {
-  }
   // password matching
   if (password !== password2) {
-    flash("err_msg", "Password don't match. Please check.")
-    res.redirect("register");
+    req.flash("err_msg", "Password don't match. Please check.")
+    res.redirect("/register");
   } else {
-    flash("success_msg", "success registry")
+    // email not registered yet
+    try {
+      let foundUser = await User.findOne({username});
+      if (foundUser) {
+        req.flash("err_msg", "Email is already registed.")
+        res.redirect("/register");
+      } else {
+        let newUser = new User(req.body); //因為 Usero入邊冇password,req.body會自動將password整走
+        await User.register(newUser, password); //用到User.register因為plugin(passportLocalMongoose)，佢同bcrypt, hash, salt 一樣，重比佢地加密更長
+        req.flash("success_msg", "Success registered, please login again."); 
+        // try {
+        //   newUser.save().then((data) => {
+        //     console.log(data);
+        //     res.flash("success_msg", "success registry"); 
+        //   }).catch((err) => {
+        //     console.log(err);
+        //   })
+        // } catch (err){
+        //   next(err);
+        // }
+        res.redirect("/login");
+      }
+    } catch {
+      next(err);
+    }
+    
+    req.flash("success_msg", "success registry")
     // res.send("Thank you for posting.");
     res.redirect("register");
   }
 });
-
 
 
 
