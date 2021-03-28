@@ -31,6 +31,7 @@ app.use(flash());
 app.use((req,res,next) => {
   res.locals.success_msg = req.flash("success_msg");
   res.locals.err_msg = req.flash("err_msg");
+  res.locals.error = req.flash("error");
   next();
 });
 
@@ -61,6 +62,51 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
+
+app.post("/login", 
+passport.authenticate("local", {failureFlash:true, failureRedirect:"/login",}), 
+async (req,res) => {
+  if (req.user.usertype == "Student") {
+    res.redirect("/student/index");
+  } else {
+    res.redirect("/teacher/index");
+  }
+  // let {username, password} = req.body;
+  // try {
+  //   let foundUser = await User.findOne({username});
+
+  //   if (!foundUser) {
+  //     req.flash("err_msg", "User not found.")
+  //     req.redirect("/login");
+  //   } else {
+  //     if (password !== foundUser.password){
+  //       req.flash("err_msg", "Password not correct");
+  //       res.redirect("/login");
+  //     } else {
+  //       if (foundUser.courses == student) {
+  //         res.render("studentViews/index.ejs");
+  //       } else {
+  //         res.render("teacherViews/index.ejs");
+  //       }
+  //     }
+  //   }
+  // } catch (err) {
+  //   console.log(err);
+  //   res.send("Error in server");
+  //   next(err);
+  // }
+  
+});
+
+// Student routes
+  app.get("/student/index", (req,res) => {
+    res.render("studentViews/index");
+  });
+
+// teacher routers
+app.get("/teacher/index", (req,res) => {
+  res.render("teacherViews/index");
+});
 
 // Sign up Page
 app.get("/register", (req, res) => {
@@ -97,11 +143,8 @@ app.get("/*", (req,res) => {
   res.render("errorViews/404");
 });
 
-// app.use(function (req, res, next) {
-//   res.status(404).render("errorViews/404");
-// });
-
 app.use(function (err, req, res, next) {
+  console.log(err);
   res.status(500).render("errorViews/500");
 });
 
