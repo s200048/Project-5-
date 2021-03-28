@@ -35,6 +35,30 @@ app.use((req,res,next) => {
   next();
 });
 
+// middleware function authentication
+function isLoggedIn (req,res,next) {
+  if (!req.isAuthenticated()) {
+    res.redirect("/login");
+  } else {
+    next();
+  }
+}
+
+function isStudent (req, res, next) {
+  if (req.user.usertype !== "Student") {
+    res.status(403).render("errorViews/403");
+  } else{
+    next();
+  }
+}
+
+function isTeacher (req, res, next) {
+  if (req.user.usertype !== "Teacher") {
+    res.status(403).render("errorViews/403");
+  } else{
+    next();
+  }
+}
 
 // connect to mongoDB
 mongoose
@@ -65,7 +89,8 @@ app.get("/login", (req, res) => {
 
 app.post("/login", 
 passport.authenticate("local", {failureFlash:true, failureRedirect:"/login",}), 
-async (req,res) => {
+(req,res) => {
+  console.log(req.user);
   if (req.user.usertype == "Student") {
     res.redirect("/student/index");
   } else {
@@ -95,16 +120,15 @@ async (req,res) => {
   //   res.send("Error in server");
   //   next(err);
   // }
-  
 });
 
 // Student routes
-  app.get("/student/index", (req,res) => {
+  app.get("/student/index", isLoggedIn, isStudent,  (req,res) => {
     res.render("studentViews/index");
   });
 
 // teacher routers
-app.get("/teacher/index", (req,res) => {
+app.get("/teacher/index", isLoggedIn, isTeacher, (req,res) => {
   res.render("teacherViews/index");
 });
 
