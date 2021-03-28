@@ -81,33 +81,29 @@ app.post("/register", async (req,res,next) => {
         req.flash("err_msg", "Email is already registed.")
         res.redirect("/register");
       } else {
-        let newUser = new User(req.body); //因為 Usero入邊冇password,req.body會自動將password整走
+        let newUser = new User(req.body); //因為 User入邊冇password,req.body會自動將password整走
         await User.register(newUser, password); //用到User.register因為plugin(passportLocalMongoose)，佢同bcrypt, hash, salt 一樣，重比佢地加密更長
         req.flash("success_msg", "Success registered, please login again."); 
-        // try {
-        //   newUser.save().then((data) => {
-        //     console.log(data);
-        //     res.flash("success_msg", "success registry"); 
-        //   }).catch((err) => {
-        //     console.log(err);
-        //   })
-        // } catch (err){
-        //   next(err);
-        // }
         res.redirect("/login");
       }
-    } catch {
+    } catch (err) {
       next(err);
     }
-    
-    req.flash("success_msg", "success registry")
-    // res.send("Thank you for posting.");
-    res.redirect("register");
   }
 });
 
+app.get("/*", (req,res) => {
+  res.status(404);
+  res.render("errorViews/404");
+});
 
+// app.use(function (req, res, next) {
+//   res.status(404).render("errorViews/404");
+// });
 
+app.use(function (err, req, res, next) {
+  res.status(500).render("errorViews/500");
+});
 
 app.listen(3000, () => {
   console.log("Server is now running on port 3000.");
