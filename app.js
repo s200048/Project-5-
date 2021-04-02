@@ -9,6 +9,7 @@ const session = require("express-session");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const flash = require("connect-flash");
+const Course = require("./models/course");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -38,6 +39,7 @@ app.use((req,res,next) => {
 // middleware function authentication
 function isLoggedIn (req,res,next) {
   if (!req.isAuthenticated()) {
+    req.flash("err_msg", "Please login first before accessing this page!");
     res.redirect("/login");
   } else {
     next();
@@ -128,8 +130,38 @@ passport.authenticate("local", {failureFlash:true, failureRedirect:"/login",}),
   });
 
 // teacher routers
-app.get("/teacher/index", isLoggedIn, isTeacher, (req,res) => {
-  res.render("teacherViews/index");
+app.get("/teacher/index", isLoggedIn, isTeacher, async (req,res) => {
+  let { _id } = req.user;
+  try{
+    let teacher = await User.findOne({ _id });
+    let coursesFound = await Course.find({_id: {$in: teacher.courses }}) //coursesFound 係 array(小心)
+    res.render("teacherViews/index", {user: req.user, courses: coursesFound});
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.get("/teacher/create", isLoggedIn, isTeacher, (req,res) => {
+  res.render("teacherViews/create", {user: req.user});
+});
+
+app.post("/teacher/create", isLoggedIn, isTeacher, async (req, res) => {
+  let {courseName, description, price} = req.body;
+  let {_id, fullname} = req.user;
+  try {
+    let newCourse = new Course ({
+      name: courseName, description, price, author: fullname, author_id: _id,
+    });
+    let data = await newCourse.save();
+    let author = await User.findOne({_id});
+    author.courses.push(data._id);
+    await author.save();
+    res.redirect("/teacher/index");
+  } catch (err) {
+    console.log(err);
+    req.flash("err_msg", "Error with creating your course.Please check with admin.");
+    res.redirect("/teacher/create");
+  }
 });
 
 // Sign up Page
@@ -161,6 +193,13 @@ app.post("/register", async (req,res,next) => {
     }
   }
 });
+
+//log out
+app.get("/logout", (req,res) => {
+  req.logOut();
+  res.redirect("/");
+});
+
 
 app.get("/*", (req,res) => {
   res.status(404);
